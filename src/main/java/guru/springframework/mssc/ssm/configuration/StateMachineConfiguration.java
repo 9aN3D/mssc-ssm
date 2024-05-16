@@ -12,6 +12,7 @@ import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
+import org.springframework.statemachine.guard.Guard;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 
@@ -23,6 +24,7 @@ import static guru.springframework.mssc.ssm.domain.PaymentState.AUTH_ERROR;
 import static guru.springframework.mssc.ssm.domain.PaymentState.NEW;
 import static guru.springframework.mssc.ssm.domain.PaymentState.PRE_AUTH;
 import static guru.springframework.mssc.ssm.domain.PaymentState.PRE_AUTH_ERROR;
+import static java.util.Objects.nonNull;
 
 @Slf4j
 @Configuration
@@ -41,7 +43,7 @@ public class StateMachineConfiguration extends StateMachineConfigurerAdapter<Pay
 
     @Override
     public void configure(StateMachineTransitionConfigurer<PaymentState, PaymentEvent> transitions) throws Exception {
-        transitions.withExternal().source(NEW).target(NEW).event(PaymentEvent.PRE_AUTHORIZE).action(preAuthAction())
+        transitions.withExternal().source(NEW).target(NEW).event(PaymentEvent.PRE_AUTHORIZE).action(preAuthAction()).guard(paymentGuard())
                 .and()
                 .withExternal().source(NEW).target(PRE_AUTH).event(PaymentEvent.PRE_AUTH_APPROVED)
                 .and()
@@ -99,6 +101,10 @@ public class StateMachineConfiguration extends StateMachineConfigurerAdapter<Pay
                         .build());
             }
         };
+    }
+
+    private Guard<PaymentState, PaymentEvent> paymentGuard() {
+        return context -> nonNull(context.getMessageHeader(PaymentService.PAYMENT_ID_HEADER));
     }
 
 }
