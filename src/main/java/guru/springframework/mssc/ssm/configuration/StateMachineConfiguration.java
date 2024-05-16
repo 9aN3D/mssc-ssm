@@ -2,8 +2,11 @@ package guru.springframework.mssc.ssm.configuration;
 
 import guru.springframework.mssc.ssm.domain.PaymentEvent;
 import guru.springframework.mssc.ssm.domain.PaymentState;
+import guru.springframework.mssc.ssm.services.PaymentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
@@ -13,6 +16,7 @@ import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
 
 import java.util.EnumSet;
+import java.util.Random;
 
 import static guru.springframework.mssc.ssm.domain.PaymentState.AUTH;
 import static guru.springframework.mssc.ssm.domain.PaymentState.AUTH_ERROR;
@@ -37,7 +41,7 @@ public class StateMachineConfiguration extends StateMachineConfigurerAdapter<Pay
 
     @Override
     public void configure(StateMachineTransitionConfigurer<PaymentState, PaymentEvent> transitions) throws Exception {
-        transitions.withExternal().source(NEW).target(NEW).event(PaymentEvent.PRE_AUTHORIZE)
+        transitions.withExternal().source(NEW).target(NEW).event(PaymentEvent.PRE_AUTHORIZE).action(preAuthAction())
                 .and()
                 .withExternal().source(NEW).target(PRE_AUTH).event(PaymentEvent.PRE_AUTH_APPROVED)
                 .and()
@@ -53,6 +57,24 @@ public class StateMachineConfiguration extends StateMachineConfigurerAdapter<Pay
             }
         };
         config.withConfiguration().listener(adapter);
+    }
+
+    private Action<PaymentState, PaymentEvent> preAuthAction() {
+        return context -> {
+            log.debug("PreAuth was called!!!");
+
+            if (new Random().nextInt(10) < 8) {
+                log.debug("Approved");
+                context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_APPROVED)
+                        .setHeader(PaymentService.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentService.PAYMENT_ID_HEADER))
+                        .build());
+            } else {
+                log.debug("Declined! No Credit!!!!!!");
+                context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_DECLINED)
+                        .setHeader(PaymentService.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentService.PAYMENT_ID_HEADER))
+                        .build());
+            }
+        };
     }
 
 }

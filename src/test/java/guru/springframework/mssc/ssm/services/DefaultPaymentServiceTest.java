@@ -14,6 +14,10 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Set;
+
+import static guru.springframework.mssc.ssm.domain.PaymentState.PRE_AUTH;
+import static guru.springframework.mssc.ssm.domain.PaymentState.PRE_AUTH_ERROR;
 
 @Slf4j
 @SpringBootTest
@@ -48,7 +52,8 @@ class DefaultPaymentServiceTest {
 
         log.debug("preAuthPayment {}", preAuthPayment);
 
-        Assertions.assertEquals(stateMachine.getState().getId(), preAuthPayment.getState());
+        Assertions.assertTrue(Set.of(PRE_AUTH, PRE_AUTH_ERROR).contains(stateMachine.getState().getId()));
+        Assertions.assertTrue(Set.of(PRE_AUTH, PRE_AUTH_ERROR).contains(preAuthPayment.getState()));
 
     }
 
