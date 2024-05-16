@@ -19,6 +19,8 @@ import static guru.springframework.mssc.ssm.domain.PaymentState.NEW;
 
 public interface PaymentService {
 
+    String PAYMENT_ID_HEADER = "payment_id";
+
     Payment create(Payment payment);
 
     StateMachine<PaymentState, PaymentEvent> preAuth(Long paymentId);
@@ -32,10 +34,9 @@ public interface PaymentService {
     @RequiredArgsConstructor
     class DefaultPaymentService implements PaymentService {
 
-        private static final String PAYMENT_ID_HEADER = "payment_id";
-
         private final PaymentRepository repository;
         private final StateMachineFactory<PaymentState, PaymentEvent> stateMachineFactory;
+        private final PaymentStateChangeInterceptor paymentStateChangeInterceptor;
 
         @Override
         public Payment create(Payment payment) {
@@ -79,6 +80,7 @@ public interface PaymentService {
 
             stateMachine.getStateMachineAccessor()
                     .doWithAllRegions(sma -> {
+                        sma.addStateMachineInterceptor(paymentStateChangeInterceptor);
                         sma.resetStateMachine(new DefaultStateMachineContext<>(payment.getState(), null, null, null));
                     });
 
