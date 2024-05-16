@@ -13,6 +13,7 @@ import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static guru.springframework.mssc.ssm.domain.PaymentEvent.AUTHORIZE;
 import static guru.springframework.mssc.ssm.domain.PaymentEvent.AUTH_APPROVED;
 import static guru.springframework.mssc.ssm.domain.PaymentEvent.AUTH_DECLINED;
 import static guru.springframework.mssc.ssm.domain.PaymentEvent.PRE_AUTH_APPROVED;
@@ -48,11 +49,12 @@ class DefaultPaymentService implements PaymentService {
     public StateMachine<PaymentState, PaymentEvent> authorize(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> stateMachine = build(paymentId);
 
-        sendEvent(paymentId, stateMachine, AUTH_APPROVED);
+        sendEvent(paymentId, stateMachine, AUTHORIZE);
 
         return stateMachine;
     }
 
+    @Deprecated
     @Override
     public StateMachine<PaymentState, PaymentEvent> declineAuth(Long paymentId) {
         StateMachine<PaymentState, PaymentEvent> stateMachine = build(paymentId);

@@ -45,7 +45,13 @@ public class StateMachineConfiguration extends StateMachineConfigurerAdapter<Pay
                 .and()
                 .withExternal().source(NEW).target(PRE_AUTH).event(PaymentEvent.PRE_AUTH_APPROVED)
                 .and()
-                .withExternal().source(NEW).target(PRE_AUTH_ERROR).event(PaymentEvent.PRE_AUTH_DECLINED);
+                .withExternal().source(NEW).target(PRE_AUTH_ERROR).event(PaymentEvent.PRE_AUTH_DECLINED)
+                .and()
+                .withExternal().source(PRE_AUTH).target(PRE_AUTH).event(PaymentEvent.AUTHORIZE).action(authAction())
+                .and()
+                .withExternal().source(PRE_AUTH).target(AUTH).event(PaymentEvent.AUTH_APPROVED)
+                .and()
+                .withExternal().source(PRE_AUTH).target(AUTH_ERROR).event(PaymentEvent.AUTH_DECLINED);
     }
 
     @Override
@@ -71,6 +77,24 @@ public class StateMachineConfiguration extends StateMachineConfigurerAdapter<Pay
             } else {
                 log.debug("Declined! No Credit!!!!!!");
                 context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_DECLINED)
+                        .setHeader(PaymentService.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentService.PAYMENT_ID_HEADER))
+                        .build());
+            }
+        };
+    }
+
+    private Action<PaymentState, PaymentEvent> authAction() {
+        return context -> {
+            log.debug("auth was called!!!");
+
+            if (new Random().nextInt(10) < 8) {
+                log.debug("Approved");
+                context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.AUTH_APPROVED)
+                        .setHeader(PaymentService.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentService.PAYMENT_ID_HEADER))
+                        .build());
+            } else {
+                log.debug("Declined! No Credit!!!!!");
+                context.getStateMachine().sendEvent(MessageBuilder.withPayload(PaymentEvent.AUTH_DECLINED)
                         .setHeader(PaymentService.PAYMENT_ID_HEADER, context.getMessageHeader(PaymentService.PAYMENT_ID_HEADER))
                         .build());
             }
